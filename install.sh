@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Opiumware v2.2.0-hotfix
+# Opiumware Old UI Installer
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -18,13 +18,11 @@ CROSS="${RED}✖${NC}"
 INFO="${CYAN}➜${NC}"
 WARN="${YELLOW}⚠${NC}"
 
-DYLIB_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn907ZDaL9RvnwtPqsyrWQGdUaCf8TDJlbXuYZ3"
-MODULES_URL="https://x099xkycxe.ufs.sh/f/ar75CUBjeUn9sVKnsuNRLpwIiVkxYvTUQnAuFbGoSEH1tPMO"
 UI_URL="https://f3a5dqxez3.ufs.sh/f/ijk9xZzvhn3rD2IKHTvR2QK1iVgakWyNDMPsXvcA9eG8xIHn"
 
 if [ -w "/Applications" ]; then
     APP_DIR="/Applications"
-    echo -e "${INFO} Installing Roblox to /Applications"
+    echo -e "${INFO} Installing to /Applications"
 else
     APP_DIR="$HOME/Applications"
     mkdir -p "$APP_DIR"
@@ -36,14 +34,8 @@ TEMP="$(mktemp -d)"
 spinner() {
     local msg="$1"
     local pid="$2"
-    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
-    local i=0
-
-    # while kill -0 "$pid" 2>/dev/null; do
-    #     printf "\r\033[K${CYAN}[${spin:i++%${#spin}:1}]${NC} %s" "$msg "
-    #     sleep 0.1
-    # done
-
+    
+    # Wait for the background process to finish
     wait "$pid"
     printf "\r\033[K"
     printf "${GREEN}${CHECK} %s - Completed${NC}\n" "$msg"
@@ -95,7 +87,7 @@ banner() {
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  
 EOF
     echo -e "${NC}"
-    echo -e "${BLUE}=[ Opiumware (Intel) Installer ]=${NC}"
+    echo -e "${BLUE}=[ Opiumware Old UI Installer ]=${NC}"
     echo -e "${CYAN}Developed by @norbyv1${NC}"
 }
 
@@ -107,78 +99,58 @@ section() {
 main() {
     banner
 
-    killall -9 RobloxPlayer Opiumware &>/dev/null || true
-    for target in "$APP_DIR/Roblox.app" "$APP_DIR/Opiumware.app"; do
-        if [ -e "$target" ]; then
-            if rm -rf "$target" 2>/dev/null; then
-                :
+    # Kill old processes
+    killall -9 Opiumware &>/dev/null || true
+    
+    # Remove existing Opiumware.app safely
+    local target_app="$APP_DIR/Opiumware.app"
+    if [ -e "$target_app" ]; then
+        if rm -rf "$target_app" 2>/dev/null; then
+            :
+        else
+            if sudo -n true 2>/dev/null; then
+                echo -e "${INFO} Please enter your password (required to overwrite old UI):"
+                sudo rm -rf "$target_app" 2>/dev/null || {
+                    echo -e "${RED}${CROSS} Failed to delete old UI. Please manually delete it.${NC}"
+                }
             else
-                if sudo -n true 2>/dev/null; then
-                    echo -e "${INFO} Please enter your password (required to delete Roblox):"
-                    sudo rm -rf "$target" 2>/dev/null || {
-                        echo -e "${RED}${CROSS} Failed to delete Roblox. Please manually delete it.${NC}"
-                    }
-                else
-                    echo -e "${RED}${CROSS} Failed to delete Roblox. Please manually delete it.${NC}"
-                    exit 1
-                fi
+                echo -e "${RED}${CROSS} Failed to delete old UI. Please manually delete it.${NC}"
+                exit 1
             fi
         fi
-    done
+    fi
 
-    rm -rf ~/Opiumware/modules/LuauLSP ~/Opiumware/modules/decompiler
-    rm -f ~/Opiumware/modules/update.json 2>/dev/null
-
-    section "Fetching client version"
-    # json=$(curl -# -L "https://clientsettingscdn.roblox.com/v2/client-version/MacPlayer")
-    # version=$(echo "$json" | grep -o '"clientVersionUpload":"[^"]*' | cut -d'"' -f4)
-    # echo -e "${INFO} Latest version: ${BOLD}$version${NC}"
-    local version="version-6298eb58de444612"  
-    echo -e "${INFO} Version: ${BOLD}$version${NC}"
-
-    section "Downloading Roblox - ($version)"
+    section "Downloading & Installing Opiumware UI"
     (
-        curl -# -L "https://setup.rbxcdn.com/mac/$version-RobloxPlayer.zip" -o "$TEMP/RobloxPlayer.zip"
-        unzip -oq "$TEMP/RobloxPlayer.zip" -d "$TEMP"
-        mv "$TEMP/RobloxPlayer.app" "$APP_DIR/Roblox.app"
-        xattr -cr "$APP_DIR/Roblox.app"
-    ) & spinner "Downloading" $!
-
-    section "Installing Opiumware modules"
-    (
-        curl -# -L "$DYLIB_URL" -o "$TEMP/libOpiumware.zip"
-        unzip -oq "$TEMP/libOpiumware.zip" -d "$TEMP"
-        mv "$TEMP/libOpiumware.dylib" "$APP_DIR/Roblox.app/Contents/Resources/libOpiumware.dylib"
-
-        curl -# -L "$MODULES_URL" -o "$TEMP/modules.zip"
-        unzip -oq "$TEMP/modules.zip" -d "$TEMP"
-        "$TEMP/Resources/Injector" "$APP_DIR/Roblox.app/Contents/Resources/libOpiumware.dylib" "$APP_DIR/Roblox.app/Contents/MacOS/libmimalloc.3.dylib" --strip-codesig --all-yes >/dev/null 2>&1
-        mv "$APP_DIR/Roblox.app/Contents/MacOS/libmimalloc.3.dylib_patched" "$APP_DIR/Roblox.app/Contents/MacOS/libmimalloc.3.dylib"
-
+        # Download the UI Zip
         curl -# -L "$UI_URL" -o "$TEMP/OpiumwareUI.zip"
+        
+        # Extract it
         unzip -oq "$TEMP/OpiumwareUI.zip" -d "$TEMP"
 
-        mkdir -p ~/Opiumware/workspace ~/Opiumware/autoexec ~/Opiumware/themes ~/Opiumware/modules ~/Opiumware/modules/decompiler ~/Opiumware/modules/LuauLSP
-        mv -f "$TEMP/Resources/decompiler" ~/Opiumware/modules/decompiler/Decompiler
-        mv -f "$TEMP/Resources/LuauLSP" ~/Opiumware/modules/LuauLSP/LuauLSP
-        mv -f "$TEMP/Opiumware.app" "$APP_DIR/Opiumware.app"
-        codesign --force --deep --sign - --identifier com.norbyv1.opiumware $APP_DIR/Opiumware.app >/dev/null 2>&1
+        # Create necessary workspace folders just in case they are needed for the UI
+        mkdir -p ~/Opiumware/workspace ~/Opiumware/autoexec ~/Opiumware/themes ~/Opiumware/modules 
+        
+        # Move the newly extracted app
+        mv -f "$TEMP/Opiumware.app" "$target_app" 2>/dev/null || true
+        
+        # Codesign the app so macOS allows it to run
+        codesign --force --deep --sign - --identifier com.norbyv1.opiumware "$target_app" >/dev/null 2>&1
+        
+        # Reset permissions
         tccutil reset ScreenCapture com.norbyv1.opiumware >/dev/null 2>&1
     ) & spinner "Installing" $!
 
     section "Finishing installation"
     (
-        codesign --force --deep --sign - "$APP_DIR/Roblox.app" >/dev/null 2>&1
         rm -rf "$TEMP"
-        rm -rf "$APP_DIR/Roblox.app/Contents/MacOS/RobloxPlayerInstaller.app" >/dev/null 2>&1
-        tccutil reset Accessibility com.Roblox.RobloxPlayer >/dev/null 2>&1
     ) & spinner "Finishing" $!
 
     echo
     echo -e "${GREEN}${BOLD}Installation complete.${NC}"
-    echo -e "${WARN} Please use an alt account."
-    open "$APP_DIR/Roblox.app"
-    open "$APP_DIR/Opiumware.app"
+    
+    # Open the UI
+    open "$target_app"
 }
 
 main
