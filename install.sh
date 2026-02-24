@@ -128,8 +128,12 @@ main() {
         # Extract it
         unzip -oq "$TEMP/OpiumwareUI.zip" -d "$TEMP"
 
-        # Create necessary workspace folders just in case they are needed for the UI
-        mkdir -p ~/Opiumware/workspace ~/Opiumware/autoexec ~/Opiumware/themes ~/Opiumware/modules 
+        # Check if necessary workspace folders exist, and create them if they don't
+        for folder in ~/Opiumware/workspace ~/Opiumware/autoexec ~/Opiumware/themes ~/Opiumware/modules; do
+            if [ ! -d "$folder" ]; then
+                mkdir -p "$folder"
+            fi
+        done
         
         # Move the newly extracted app
         mv -f "$TEMP/Opiumware.app" "$target_app" 2>/dev/null || true
