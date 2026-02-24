@@ -99,11 +99,14 @@ section() {
 main() {
     banner
 
-    # Kill old processes
+    # Kill old processes (safe to run even if nothing is open)
     killall -9 Opiumware &>/dev/null || true
+    killall -9 "Opiumware Old UI" &>/dev/null || true
     
-    # Remove existing Opiumware.app safely
-    local target_app="$APP_DIR/Opiumware.app"
+    # Target path uses a different name so your current UI is untouched
+    local target_app="$APP_DIR/Opiumware Old UI.app"
+    
+    # Remove existing "Opiumware Old UI.app" safely (if you are re-running the installer)
     if [ -e "$target_app" ]; then
         if rm -rf "$target_app" 2>/dev/null; then
             :
@@ -120,7 +123,7 @@ main() {
         fi
     fi
 
-    section "Downloading & Installing Opiumware UI"
+    section "Downloading & Installing Opiumware Old UI"
     (
         # Download the UI Zip
         curl -# -L "$UI_URL" -o "$TEMP/OpiumwareUI.zip"
@@ -135,7 +138,7 @@ main() {
             fi
         done
         
-        # Move the newly extracted app
+        # Move the newly extracted app and rename it to "Opiumware Old UI.app"
         mv -f "$TEMP/Opiumware.app" "$target_app" 2>/dev/null || true
         
         # Codesign the app so macOS allows it to run
@@ -153,7 +156,7 @@ main() {
     echo
     echo -e "${GREEN}${BOLD}Installation complete.${NC}"
     
-    # Open the UI
+    # Open the Old UI
     open "$target_app"
 }
 
